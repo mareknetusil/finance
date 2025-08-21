@@ -1,3 +1,4 @@
+from finance.hello import main
 
 def test_hello():
-    assert 1 == 1
+    main()
