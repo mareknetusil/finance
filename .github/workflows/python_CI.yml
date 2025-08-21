@@ -1,0 +1,58 @@
+
+name: Python Code Quality Checks
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  quality-checks:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10, 3.11]
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pylint mypy pytest
+        # Install your project dependencies
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+        # Install your package in development mode if you have setup.py/pyproject.toml
+        if [ -f setup.py ]; then pip install -e .; fi
+        if [ -f pyproject.toml ]; then pip install -e .; fi
+    
+    - name: Run pylint
+      run: |
+        pylint --rcfile=.pylintrc $(find . -name "*.py" | grep -v __pycache__ | grep -v .git)
+      continue-on-error: false
+    
+    - name: Run mypy
+      run: |
+        mypy --config-file=mypy.ini .
+      continue-on-error: false
+    
+    - name: Run pytest
+      run: |
+        pytest --verbose --tb=short
+      continue-on-error: false
