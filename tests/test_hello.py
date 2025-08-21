@@ -1,4 +1,4 @@
-from .test_hello import main
+from test_hello import main
 
 def test_hello():
     main()
